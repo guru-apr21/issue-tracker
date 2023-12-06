@@ -3,8 +3,8 @@ import ErrorMessage from "@/app/components/ErrorMessage";
 import Spinner from "@/app/components/Spinner";
 import { issueSchema } from "@/app/validationSchemas";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Issue } from "@prisma/client";
-import { Button, Callout, TextField } from "@radix-ui/themes";
+import { Issue, Status } from "@prisma/client";
+import { Button, Callout, Select, TextField } from "@radix-ui/themes";
 import axios from "axios";
 import "easymde/dist/easymde.min.css";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,12 @@ interface Props {
   issue?: Issue;
 }
 
+const statuses: { label: string; value: Status }[] = [
+  { label: "Open", value: "OPEN" },
+  { label: "In Progress", value: "IN_PROGRESS" },
+  { label: "Closed", value: "CLOSED" },
+];
+
 const IssueForm = ({ issue }: Props) => {
   const [error, setError] = useState("");
   const [isSubmitting, setSubmitting] = useState(false);
@@ -27,6 +33,8 @@ const IssueForm = ({ issue }: Props) => {
     register,
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<IssueFormData>({
     resolver: zodResolver(issueSchema),
@@ -45,6 +53,8 @@ const IssueForm = ({ issue }: Props) => {
     }
   });
 
+  const selectedStatus = watch("status", issue?.status || "OPEN");
+
   return (
     <div className="max-w-xl">
       {error && (
@@ -61,6 +71,24 @@ const IssueForm = ({ issue }: Props) => {
           ></TextField.Input>
         </TextField.Root>
         <ErrorMessage>{errors.title?.message}</ErrorMessage>
+        {issue && (
+          <>
+            <Select.Root
+              value={selectedStatus}
+              onValueChange={(value: Status) => setValue("status", value)}
+            >
+              <Select.Trigger />
+              <Select.Content>
+                {statuses.map((status) => (
+                  <Select.Item key={status.value} value={status.value}>
+                    {status.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Root>
+            <input type="hidden" {...register("status")} />
+          </>
+        )}
         <Controller
           name="description"
           control={control}
